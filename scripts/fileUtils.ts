@@ -1,6 +1,7 @@
 import axios from 'axios'
 import fs from 'fs-extra'
 import * as path from 'path'
+import async from 'async'
 
 const BASE_URL = 'https://intellij-icons.jetbrains.design/'
 
@@ -75,7 +76,7 @@ export const getSVGIconPathFromJavaAttr = async (javaAttr: string, variant = 'no
     }, [] as JBIcon[])
   }
 
-  const icon = icons.find(icon => icon.java === javaAttr)
+  const icon = icons.find(icon => icon.java === javaAttr && icon.kind === 'svg')
   if (!icon) {
     return null
   }
@@ -89,3 +90,23 @@ export const getSVGIconPathFromJavaAttr = async (javaAttr: string, variant = 'no
     return null
   } 
 }
+
+export const downloadImageToTemp = async (iconUrls: string[]) => {
+  fs.ensureDirSync(path.join(__dirname, '../temp'))
+  
+  await async.eachLimit(iconUrls, 10, async (url) => {
+    const filepath = path.join(__dirname, '../temp', url)
+
+    if (fs.existsSync(filepath)) {
+      return
+    }
+
+    const response = await instance.get(encodeURI(url), { responseType: 'blob' })
+    const dir = path.dirname(url)
+  
+    fs.ensureDirSync(path.join(__dirname, '../temp', dir))
+  
+    fs.writeFileSync(filepath, response.data)
+  })
+}
+  

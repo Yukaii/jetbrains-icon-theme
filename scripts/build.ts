@@ -6,7 +6,7 @@ import pkg from '../package.json'
 import { sets } from './sets'
 // @ts-ignore
 import gen from 'webfonts-generator'
-import { getSVGIconPathFromJavaAttr } from './fileUtils'
+import { downloadImageToTemp, getSVGIconPathFromJavaAttr } from './fileUtils'
 
 const e = (cmd: string) => execSync(cmd, { stdio: 'inherit' })
 
@@ -22,6 +22,15 @@ const e = (cmd: string) => execSync(cmd, { stdio: 'inherit' })
     fs.ensureDirSync('temp/builtIcons')
     fs.ensureDirSync(`build/${name}`)
     fs.emptyDirSync(`build/${name}`)
+    
+    // download all icons
+    const iconUrls = (await async.map(Object.entries(set.icons), async ([, v]) => {
+      const url = await getSVGIconPathFromJavaAttr(v)
+      if (!url) { throw url }
+      return url
+    })).filter(Boolean) as string[]
+    
+    await downloadImageToTemp(iconUrls)
   
     const icons = await async.map(Object.entries(set.icons), async ([k, v]) => {
       k = k.replace('codicon:', '')
